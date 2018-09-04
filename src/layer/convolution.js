@@ -44,6 +44,8 @@ export function predict(inputs, filters, biases) {
             sum +=
               filters[filterIndex][filterY][filterX] *
               inputs[inputIndex][inputY][inputX]
+
+            console.log('filter ', filterIndex, filterY, filterX, '  input ', inputIndex, inputY, inputX, '  output ', this.thread.z, this.thread.y, this.thread.x);
           }
         }
       }
@@ -52,18 +54,100 @@ export function predict(inputs, filters, biases) {
   return sum + biases[this.thread.z]
 }
 
+// export function compareFilters(filterDeltas, inputs, deltas) {
+//   const inputX = (this.thread.x * this.constants.strideX) - this.constants.paddingX
+//   const inputY = (this.thread.y * this.constants.strideY) - this.constants.paddingY
+//   let sum = filterDeltas[this.thread.z][this.thread.y][this.thread.x]
+//   for (let z = 0; z < this.constants.filterCount; z++) {
+//     for (let y = 0; y < this.constants.filterHeight + this.constants.paddingY; y++) {
+//       for (let x = 0; x < this.constants.filterWidth + this.constants.paddingX; x++) {
+//         const deltaY = inputY + y;
+//         const deltaX = inputX + x;
+//         if (deltaY < 0 || deltaY >= this.constants.deltasHeight) continue;
+//         if (deltaX < 0 || deltaX >= this.constants.deltasWidth) continue;
+//         if (this.thread.y === 0 && this.thread.x === 0) {
+//           // console.log(deltaY, deltaX, y, x)
+//         }
+//         sum += deltas[this.thread.z][deltaY][deltaX] * inputs[this.thread.z][y][x]
+//       }
+//     }
+//   }
+//   return sum
+// }
 export function compareFilters(filterDeltas, inputs, deltas) {
-  const inputX = (this.thread.x * this.constants.strideX) - this.constants.paddingX
-  const inputY = (this.thread.y * this.constants.strideY) - this.constants.paddingY
-  let sum = filterDeltas[this.thread.z][this.thread.y][this.thread.x]
-  for (let z = 0; z < this.constants.filterCount; z++) {
-    for (let y = 0; y < this.constants.filterHeight; y++) {
-      for (let x = 0; x < this.constants.filterWidth; x++) {
-        sum += deltas[this.thread.z][inputY + y][inputX + x] * inputs[this.thread.z][y][x]
-      }
+  const inputX = getCompareFilterInputIndexStart(
+    this.thread.x,
+    this.constants.paddingX
+  )
+  const inputY = getCompareFilterInputIndexStart(
+    this.thread.y,
+    this.constants.paddingY
+  )
+  const maxInputX = getCompareFilterInputIndexStop(
+    this.thread.x,
+    this.constants.paddingX,
+    this.constants.deltaWidth,
+    this.constants.inputWidth
+  )
+  const maxInputY = getCompareFilterInputIndexStop(
+    this.thread.y,
+    this.constants.paddingY,
+    this.constants.deltaHeight,
+    this.constants.inputHeight
+  )
+
+  const deltaY = getCompareFilterDeltasIndexStart(
+    this.thread.y,
+    this.constants.strideY,
+    this.constants.paddingY
+  )
+
+  const deltaX = getCompareFilterDeltasIndexStart(
+    this.thread.x,
+    this.constants.strideX,
+    this.constants.paddingX
+  )
+
+  const maxDeltaY = getCompareFilterDeltasIndexStop(
+    this.thread.y,
+    this.constants.strideY,
+    this.constants.paddingY,
+    this.constants.deltaHeight,
+    this.constants.outputHeight
+  )
+
+  const maxDeltaX = getCompareFilterDeltasIndexStop(
+    this.thread.x,
+    this.constants.strideX,
+    this.constants.paddingX,
+    this.constants.deltaWidth,
+    this.constants.outputWidth
+  )
+
+  let sum = filterDeltas[this.thread.z][this.thread.y][this.thread.x];
+  for (let y = 0; y < this.constants.deltasHeight; y+= this.constants.strideY) {
+    for (let x = 0; x < this.constants.deltasX; x += this.constants.strideX) {
+      sum += inputs[this.thread.z][inputY + y][inputX + x] * deltas[this.thread.z][deltaY + y][deltaX + x]
     }
   }
-  return sum
+
+  return sum;
+}
+
+export function getCompareFilterDeltasIndexStart(index, stride, padding) {
+  return Math.max((index * stride) - padding, 0)
+}
+
+export function getCompareFilterDeltasIndexStop(index, stride, padding, deltaSize, outputSize) {
+  return Math.min(((index * stride) - padding) + outputSize, deltaSize)
+}
+
+export function getCompareFilterInputIndexStart(index, stride, padding) {
+  return Math.max(padding - (index * stride), 0)
+}
+
+export function getCompareFilterInputIndexStop(index, stride, padding, deltaSize, inputSize) {
+  return Math.min(padding - (index * stride) + deltaSize, inputSize)
 }
 
 export function compareInputs(filters, deltas) {

@@ -313,7 +313,29 @@ export default class FeedForward {
 
   _calculateDeltas(target) {
     for (let i = this.layers.length - 1; i > -1; i--) {
+      if (this.layers[i].inputLayer.depth > 1) {
+        if (this.layers[i].inputLayer.deltas.length !== this.layers[i].inputLayer.depth) debugger
+        if (this.layers[i].inputLayer.deltas[0].length !== this.layers[i].inputLayer.height) debugger
+        if (this.layers[i].inputLayer.deltas[0][0].length !== this.layers[i].inputLayer.width) debugger
+      } else if (this.layers[i].inputLayer.height > 1) {
+        if (this.layers[i].inputLayer.deltas.length !== this.layers[i].inputLayer.height) debugger
+        if (this.layers[i].inputLayer.deltas[0].length !== this.layers[i].inputLayer.width) debugger
+      } else {
+        if (this.layers[i].inputLayer.deltas.length !== this.layers[i].inputLayer.width) debugger
+      }
+
       this.layers[i].compare(target)
+
+      if (this.layers[i].inputLayer.depth > 1) {
+        if (this.layers[i].inputLayer.deltas.length !== this.layers[i].inputLayer.depth) debugger
+        if (this.layers[i].inputLayer.deltas[0].length !== this.layers[i].inputLayer.height) debugger
+        if (this.layers[i].inputLayer.deltas[0][0].length !== this.layers[i].inputLayer.width) debugger
+      } else if (this.layers[i].inputLayer.height > 1) {
+        if (this.layers[i].inputLayer.deltas.length !== this.layers[i].inputLayer.height) debugger
+        if (this.layers[i].inputLayer.deltas[0].length !== this.layers[i].inputLayer.width) debugger
+      } else {
+        if (this.layers[i].inputLayer.deltas.length !== this.layers[i].inputLayer.width) debugger
+      }
     }
   }
 
